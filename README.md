@@ -1,226 +1,204 @@
-# PolicyGen Backend
+# PolicyGen
 
-개인정보처리방침 및 서비스 이용약관을 AI로 생성하는 NestJS 백엔드 서버입니다.
+> 한국 법률 기준에 맞는 **개인정보처리방침**과 **서비스 이용약관**을 AI로 5분 만에 생성하는 법률 문서 자동화 서비스
+
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?style=flat-square&logo=nestjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai&logoColor=white)
+
+---
+
+## 소개
+
+PolicyGen은 스타트업과 개인 개발자가 서비스 출시 전 반드시 준비해야 하는 법률 문서를, 법률 전문 지식 없이도 빠르게 완성할 수 있도록 돕는 서비스입니다.
+
+체크박스 방식으로 서비스에 해당하는 항목을 선택하면, OpenAI GPT-4o가 개인정보 보호법·전자상거래법 등 한국 법령을 반영한 전문적인 문서를 자동으로 생성합니다. 생성된 문서는 실시간으로 미리보기하고, PDF 또는 HTML 파일로 즉시 다운로드할 수 있습니다.
+
+---
+
+## 주요 기능
+
+### 개인정보처리방침 생성기
+
+19개의 개인정보 처리 항목(회원가입, 결제, 마케팅, 위치정보 등) 중 서비스에 해당하는 항목을 선택하고 세부 정보를 입력하면, 법령 기준에 맞는 개인정보처리방침이 자동으로 생성됩니다.
+
+- **5단계 위저드**: 서비스 정보 → 항목 선택 → 세부 입력 → 미리보기 → 내보내기
+- **동적 조항 생성**: 처리 위탁, 제3자 제공, 국외 이전 항목 선택 시 해당 조항 자동 삽입
+- **19개 처리 항목**: 회원가입, 소셜 로그인, 결제(단건/구독), 마케팅(이메일/푸시/광고픽셀), 고객센터, 분석/로그, 배송, 위치기반, 커뮤니티, 이벤트/경품, 설문조사, 관리자 계정 등
+- **실시간 미리보기**: 데스크톱에서 입력 중에도 문서 구성 현황을 사이드바로 확인
+
+### 서비스 이용약관 생성기
+
+서비스 유형에 따른 기본 구조에, 제공하는 기능별 추가 조항을 선택하여 맞춤형 이용약관을 생성합니다.
+
+- **서비스 유형 템플릿**: SaaS, 쇼핑몰, 커뮤니티, 앱, 콘텐츠, 플랫폼 등 유형별 기본 항목 자동 세팅
+- **선택형 추가 조항**: 유료 서비스, 구독 모델, 전자상거래, 커뮤니티/UGC, AI 기능, 위치기반 서비스, 해외 사용자, 미성년자 대상 등 8종
+- **법령 연계**: 각 조항별 관련 법령(전자상거래법, 정보통신망법, 위치정보보호법, 청소년보호법 등) 표시
+- **장(章) 구조**: 총칙 → 회원 및 서비스 이용 → 이용자 의무 → 게시물 및 권리 → 계약해지 → 책임 및 분쟁 → (선택) 유료서비스 / 위치기반 / 기타
+
+### 문서 관리
+
+생성한 문서를 계정에 저장하고, 언제든지 다시 불러와 수정하거나 재다운로드할 수 있습니다.
+
+- 문서 저장 및 목록 조회 (페이지네이션)
+- 임시저장(draft) / 게시(published) 상태 관리
+- 저장 문서 직접 PDF/HTML 다운로드
+
+### 내보내기
+
+- **서버사이드 PDF**: Puppeteer로 A4 포맷, 한글 폰트, 페이지 번호가 정확하게 반영된 고품질 PDF 생성
+- **HTML 다운로드**: 웹사이트에 바로 삽입 가능한 완성형 HTML 파일
+- 로그인 없이도 즉시 내보내기 가능
+
+### 인증
+
+- Google, Kakao 소셜 로그인 (OAuth 2.0)
+- JWT Access Token(15분) + Refresh Token(7일) 기반 인증
+- Refresh Token bcrypt 해시 저장
+
+---
 
 ## 기술 스택
 
+### Frontend
+
 | 구분 | 기술 |
 |------|------|
-| Framework | NestJS |
-| Database | PostgreSQL + TypeORM |
-| 인증 | OAuth 2.0 (Google, Kakao) + JWT |
-| AI | OpenAI GPT-4o |
-| PDF | Puppeteer (서버사이드 렌더링) |
-| API 문서 | Swagger |
+| Framework | React 19 + TypeScript |
+| Build | Vite 7 |
+| Styling | Tailwind CSS v3 + shadcn/ui (Radix UI 기반) |
+| State | Zustand |
+| Form | React Hook Form + Zod |
+| Routing | React Router DOM v7 |
+| PDF (클라이언트) | jsPDF + html2canvas |
 
-## 디렉토리 구조
+### Backend
+
+| 구분 | 기술 |
+|------|------|
+| Framework | NestJS 11 + TypeScript |
+| Database | PostgreSQL 15 + TypeORM |
+| 인증 | Passport (Google, Kakao OAuth) + JWT |
+| AI | OpenAI SDK (GPT-4o, 미설정 시 템플릿 폴백) |
+| PDF (서버사이드) | Puppeteer |
+| API 문서 | Swagger (`/api/docs`) |
+| 유효성 검사 | class-validator |
+
+---
+
+## 프로젝트 구조
 
 ```
-src/
-├── main.ts                     # 엔트리포인트 (CORS, Swagger, ValidationPipe)
-├── app.module.ts               # 루트 모듈
-├── config/
-│   └── database.config.ts      # PostgreSQL 연결 설정
-├── auth/                       # 인증 모듈
-│   ├── strategies/             # Passport 전략 (JWT, Google, Kakao)
-│   ├── guards/                 # 인증 가드
-│   ├── decorators/             # @CurrentUser() 데코레이터
-│   └── dto/                    # 요청 DTO
-├── users/                      # 사용자 모듈
-│   └── entities/               # User 엔티티
-├── generation/                 # AI 문서 생성 모듈
-│   ├── prompts/                # OpenAI 시스템/유저 프롬프트
-│   └── dto/                    # 생성 요청 DTO
-├── documents/                  # 문서 CRUD 모듈
-│   ├── entities/               # Document 엔티티
-│   └── dto/                    # 문서 요청 DTO
-├── export/                     # PDF/HTML 내보내기 모듈
-│   └── templates/              # HTML 템플릿
-└── common/
-    ├── filters/                # 글로벌 예외 필터
-    ├── interceptors/           # 응답 변환 인터셉터
-    └── types/                  # 프론트엔드 타입 미러링
+policygen/
+├── frontend/               # React SPA
+│   └── src/
+│       ├── pages/          # PrivacyPolicyGenerator, TermsOfServiceGenerator, Home
+│       ├── components/     # UI 컴포넌트 (forms, stepper, preview, export)
+│       ├── store/          # Zustand (appStore, termsStore)
+│       ├── data/           # 처리 항목 목록, 약관 기능 목록
+│       └── types/          # 공유 타입 정의
+│
+└── backend/                # NestJS API 서버
+    └── src/
+        ├── auth/           # OAuth, JWT, 토큰 관리
+        ├── users/          # 사용자 CRUD
+        ├── generation/     # OpenAI 문서 생성 + 템플릿 폴백
+        ├── documents/      # 문서 저장/조회/수정/삭제
+        ├── export/         # Puppeteer PDF, HTML 생성
+        └── common/         # 전역 필터, 인터셉터, 타입
 ```
 
-## 설치 및 실행
+---
+
+## 시작하기
 
 ### 사전 요구사항
 
 - Node.js 18+
 - PostgreSQL 15+
 
-### 설치
+### Backend 설정
 
 ```bash
+cd backend
 npm install
-```
-
-### 환경변수 설정
-
-```bash
 cp .env.example .env
 ```
 
-`.env` 파일을 열고 아래 항목을 설정합니다:
+`.env` 최소 필수 설정:
 
 ```env
-# Database
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=your_db_user
 DB_PASSWORD=your_db_password
 DB_DATABASE=policygen
 
-# JWT
-JWT_SECRET=your-secret-key
+JWT_SECRET=your-jwt-secret
 
-# Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+# AI 생성 (없으면 템플릿 폴백으로 동작)
+OPENAI_API_KEY=sk-...
 
-# Kakao OAuth
-KAKAO_CLIENT_ID=your-kakao-rest-api-key
-KAKAO_CLIENT_SECRET=your-kakao-client-secret
+# OAuth (소셜 로그인 사용 시)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
 
-# OpenAI (선택 - 없으면 템플릿 폴백)
-OPENAI_API_KEY=your-openai-api-key
+KAKAO_CLIENT_ID=...
+KAKAO_CALLBACK_URL=http://localhost:3000/api/auth/kakao/callback
 ```
-
-### 데이터베이스 생성
 
 ```bash
 psql -U your_db_user -c "CREATE DATABASE policygen;"
+npm run start:dev
 ```
 
-### 실행
+서버: `http://localhost:3000`  
+Swagger: `http://localhost:3000/api/docs`
+
+### Frontend 설정
 
 ```bash
-# 개발 모드
-npm run start:dev
-
-# 프로덕션 빌드
-npm run build
-npm run start:prod
+cd frontend
+npm install
+npm run dev
 ```
 
-서버가 `http://localhost:3000`에서 실행됩니다.
+앱: `http://localhost:5173`
 
-## API 문서
+---
 
-서버 실행 후 Swagger UI에서 전체 API를 확인할 수 있습니다:
-
-```
-http://localhost:3000/api/docs
-```
-
-## API 엔드포인트
-
-### 인증 (Auth)
+## API 개요
 
 | Method | Path | Auth | 설명 |
 |--------|------|------|------|
-| GET | `/api/auth/google` | - | Google OAuth 리다이렉트 |
-| GET | `/api/auth/google/callback` | - | Google 콜백 처리 |
-| GET | `/api/auth/kakao` | - | Kakao OAuth 리다이렉트 |
-| GET | `/api/auth/kakao/callback` | - | Kakao 콜백 처리 |
+| GET | `/api/auth/google` | - | Google 로그인 |
+| GET | `/api/auth/kakao` | - | Kakao 로그인 |
 | POST | `/api/auth/refresh` | - | 토큰 갱신 |
 | POST | `/api/auth/logout` | JWT | 로그아웃 |
-
-### 사용자 (Users)
-
-| Method | Path | Auth | 설명 |
-|--------|------|------|------|
-| GET | `/api/users/me` | JWT | 내 정보 조회 |
-
-### AI 문서 생성 (Generation)
-
-| Method | Path | Auth | 설명 |
-|--------|------|------|------|
+| GET | `/api/users/me` | JWT | 내 프로필 |
 | POST | `/api/generate/privacy-policy` | - | 개인정보처리방침 생성 |
-| POST | `/api/generate/terms-of-service` | - | 이용약관 생성 |
-
-OpenAI API 키가 설정된 경우 GPT-4o로 생성하고, 실패 시 템플릿 기반으로 폴백합니다.
-
-### 문서 CRUD (Documents)
-
-| Method | Path | Auth | 설명 |
-|--------|------|------|------|
+| POST | `/api/generate/terms-of-service` | - | 서비스 이용약관 생성 |
 | POST | `/api/documents` | JWT | 문서 저장 |
-| GET | `/api/documents` | JWT | 내 문서 목록 |
-| GET | `/api/documents/:id` | JWT | 문서 상세 |
+| GET | `/api/documents` | JWT | 문서 목록 |
 | PATCH | `/api/documents/:id` | JWT | 문서 수정 |
 | DELETE | `/api/documents/:id` | JWT | 문서 삭제 |
+| POST | `/api/export/pdf` | - | PDF 다운로드 (비로그인) |
+| POST | `/api/export/html` | - | HTML 다운로드 (비로그인) |
+| GET | `/api/documents/:id/export/pdf` | JWT | 저장 문서 PDF |
+| GET | `/api/documents/:id/export/html` | JWT | 저장 문서 HTML |
 
-### 내보내기 (Export)
+전체 API 명세는 Swagger UI에서 확인 및 테스트할 수 있습니다.
 
-| Method | Path | Auth | 설명 |
-|--------|------|------|------|
-| GET | `/api/documents/:id/export/pdf` | JWT | 저장된 문서 PDF |
-| GET | `/api/documents/:id/export/html` | JWT | 저장된 문서 HTML |
-| POST | `/api/export/pdf` | - | 비로그인 PDF 생성 |
-| POST | `/api/export/html` | - | 비로그인 HTML 생성 |
+---
 
-## DB 스키마
+## 법률 고지
 
-### users
+본 서비스는 법률 자문을 제공하지 않습니다. 생성된 문서는 참고용이며, 실제 서비스 배포 전 반드시 법무 전문가의 검토를 받으시기 바랍니다.
 
-| Column | Type | Note |
-|--------|------|------|
-| id | UUID (PK) | |
-| email | VARCHAR (unique) | |
-| name | VARCHAR | |
-| provider | ENUM('google','kakao') | |
-| providerId | VARCHAR | |
-| profileImage | VARCHAR (nullable) | |
-| refreshToken | VARCHAR (nullable) | bcrypt 해시 저장 |
-| createdAt | TIMESTAMP | |
-| updatedAt | TIMESTAMP | |
-
-### documents
-
-| Column | Type | Note |
-|--------|------|------|
-| id | UUID (PK) | |
-| userId | UUID (FK → users) | CASCADE delete |
-| type | ENUM('privacy-policy','terms-of-service') | |
-| title | VARCHAR | |
-| content | JSONB | 생성된 문서 전체 |
-| serviceInfo | JSONB | 서비스 기본 정보 |
-| selections | JSONB | 사용자 선택 항목 |
-| status | ENUM('draft','published') | default: 'draft' |
-| createdAt | TIMESTAMP | |
-| updatedAt | TIMESTAMP | |
-
-## OAuth 설정 가이드
-
-### Google
-
-1. [Google Cloud Console](https://console.cloud.google.com/) → 프로젝트 생성
-2. API 및 서비스 → 사용자 인증 정보 → OAuth 2.0 클라이언트 ID 생성
-3. 승인된 리디렉션 URI: `http://localhost:3000/api/auth/google/callback`
-
-### Kakao
-
-1. [Kakao Developers](https://developers.kakao.com/) → 애플리케이션 생성
-2. 앱 설정 → 앱 키 → REST API 키 확인
-3. 카카오 로그인 활성화 → Redirect URI: `http://localhost:3000/api/auth/kakao/callback`
-4. 동의항목 → 닉네임, 이메일 필수/선택 동의 설정
-
-## 프론트엔드 연동
-
-프론트엔드 개발 서버(`localhost:5173`)에서 Vite proxy로 `/api` 요청을 백엔드로 전달합니다:
-
-```ts
-// vite.config.ts
-server: {
-  proxy: {
-    '/api': {
-      target: 'http://localhost:3000',
-      changeOrigin: true,
-    },
-  },
-}
-```
+---
 
 ## 라이선스
 

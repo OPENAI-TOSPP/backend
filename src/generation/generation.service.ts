@@ -21,6 +21,9 @@ export class GenerationService {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (apiKey && apiKey !== 'your-openai-api-key') {
       this.openai = new OpenAI({ apiKey });
+      this.logger.log(`OpenAI 클라이언트 초기화 완료 | model: ${this.configService.get('OPENAI_MODEL') || 'gpt-4o'}`);
+    } else {
+      this.logger.warn('OPENAI_API_KEY 미설정 — 템플릿 폴백 모드로 동작합니다');
     }
   }
 
@@ -29,7 +32,9 @@ export class GenerationService {
     selectedItems: string[];
     detailInputs: Record<string, any>;
   }): Promise<GeneratedDocument> {
-    // Try OpenAI first
+    const { serviceName } = data.serviceInfo;
+    this.logger.log(`[개인정보처리방침] 생성 요청 | service: "${serviceName}" | items: ${data.selectedItems.length}개 [${data.selectedItems.join(', ')}]`);
+
     if (this.openai) {
       try {
         const result = await this.callOpenAI(
@@ -37,6 +42,7 @@ export class GenerationService {
           buildPrivacyPolicyUserPrompt(data),
         );
         const parsed = JSON.parse(result);
+        this.logger.log(`[개인정보처리방침] AI 생성 완료 | service: "${serviceName}" | sections: ${parsed.sections?.length ?? 0}개`);
         return {
           title: parsed.title,
           content: parsed.sections.map((s: any) => s.content).join('\n'),
@@ -45,12 +51,16 @@ export class GenerationService {
           version: 1,
         };
       } catch (error) {
-        this.logger.warn('OpenAI failed, falling back to template generation', error);
+        this.logger.warn(`[개인정보처리방침] OpenAI 실패, 폴백 전환 | service: "${serviceName}" | error: ${error.message}`);
       }
+    } else {
+      this.logger.log(`[개인정보처리방침] OpenAI 미설정, 폴백 사용 | service: "${serviceName}"`);
     }
 
     // Fallback: template-based generation
-    return this.generatePrivacyPolicyFallback(data);
+    const fallback = this.generatePrivacyPolicyFallback(data);
+    this.logger.log(`[개인정보처리방침] 폴백 생성 완료 | service: "${serviceName}" | sections: ${fallback.sections.length}개`);
+    return fallback;
   }
 
   async generateTermsOfService(data: {
@@ -58,6 +68,9 @@ export class GenerationService {
     selectedFeatures: string[];
     featureInputs: Record<string, any>;
   }): Promise<GeneratedTerms> {
+    const { serviceName } = data.serviceInfo;
+    this.logger.log(`[서비스이용약관] 생성 요청 | service: "${serviceName}" | features: ${data.selectedFeatures.length}개 [${data.selectedFeatures.join(', ')}]`);
+
     if (this.openai) {
       try {
         const result = await this.callOpenAI(
@@ -66,6 +79,7 @@ export class GenerationService {
         );
         const parsed = JSON.parse(result);
         const chapters = parsed.chapters as TermsChapter[];
+        this.logger.log(`[서비스이용약관] AI 생성 완료 | service: "${serviceName}" | chapters: ${chapters.length}개`);
         return {
           title: parsed.title,
           content: chapters
@@ -78,15 +92,22 @@ export class GenerationService {
           version: 1,
         };
       } catch (error) {
-        this.logger.warn('OpenAI failed, falling back to template generation', error);
+        this.logger.warn(`[서비스이용약관] OpenAI 실패, 폴백 전환 | service: "${serviceName}" | error: ${error.message}`);
       }
+    } else {
+      this.logger.log(`[서비스이용약관] OpenAI 미설정, 폴백 사용 | service: "${serviceName}"`);
     }
 
-    return this.generateTermsFallback(data);
+    const fallback = this.generateTermsFallback(data);
+    this.logger.log(`[서비스이용약관] 폴백 생성 완료 | service: "${serviceName}" | chapters: ${fallback.chapters.length}개`);
+    return fallback;
   }
 
   private async callOpenAI(systemPrompt: string, userPrompt: string): Promise<string> {
     const model = this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o';
+    this.logger.log(`[OpenAI] 호출 시작 | model: ${model} | system: ${systemPrompt.length}자 | user: ${userPrompt.length}자`);
+    const startTime = Date.now();
+
     const response = await this.openai!.chat.completions.create({
       model,
       messages: [
@@ -97,7 +118,23 @@ export class GenerationService {
       temperature: 0.3,
       max_tokens: 8000,
     });
-    return response.choices[0].message.content || '{}';
+
+    const elapsed = Date.now() - startTime;
+    const usage = response.usage;
+    this.logger.log(
+      `[OpenAI] 응답 완료 | ${elapsed}ms | ` +
+      `tokens: ${usage?.prompt_tokens ?? '?'}(in) + ${usage?.completion_tokens ?? '?'}(out) = ${usage?.total_tokens ?? '?'}(total) | ` +
+      `finish_reason: ${response.choices[0].finish_reason}`,
+    );
+
+    const content = response.choices[0].message.content || '{}';
+    try {
+      JSON.parse(content);
+    } catch {
+      this.logger.error(`[OpenAI] JSON 파싱 실패 | response 앞 200자: ${content.slice(0, 200)}`);
+      throw new Error('OpenAI 응답이 유효한 JSON이 아닙니다');
+    }
+    return content;
   }
 
   // ===== Privacy Policy Fallback (ported from frontend appStore.ts) =====
